@@ -1,19 +1,62 @@
-const { Client, GatewayIntentBits, ChannelType } = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
+const {
+  joinVoiceChannel,
+  VoiceConnectionStatus,
+  entersState,
+} = require("@discordjs/voice");
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildVoiceStates,
-  ],
+  intents: [GatewayIntentBits.Guilds],
 });
 
-client.once("clientReady", async () => {
-  const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+const TOKEN = process.env.TOKEN;
+const GUILD_ID = process.env.GUILD_ID;
+const CHANNEL_ID = process.env.CHANNEL_ID;
 
-  console.log("Nama:", channel.name);
-  console.log("ID:", channel.id);
-  console.log("Type:", channel.type);
-  console.log("Guild:", channel.guild?.name);
+let connection;
+
+async function connectVoice() {
+  try {
+    const guild = await client.guilds.fetch(GUILD_ID);
+
+    connection = joinVoiceChannel({
+      channelId: CHANNEL_ID,
+      guildId: guild.id,
+      adapterCreator: guild.voiceAdapterCreator,
+      selfDeaf: false,
+      selfMute: false,
+    });
+
+    await entersState(connection, VoiceConnectionStatus.Ready, 30000);
+
+    console.log("✅ Bot berhasil masuk voice channel.");
+
+    connection.on(VoiceConnectionStatus.Disconnected, async () => {
+      console.log("⚠️ Terputus. Mencoba reconnect...");
+
+      try {
+        await entersState(connection, VoiceConnectionStatus.Connecting, 5000);
+        console.log("✅ Berhasil reconnect.");
+      } catch {
+        console.log("🔄 Rejoin voice channel...");
+        connectVoice();
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Gagal join voice:", err);
+    setTimeout(connectVoice, 10000);
+  }
+}
+
+client.once("ready", async () => {
+  console.log(`Login sebagai ${client.user.tag}`);
+  connectVoice();
 });
 
-client.login(process.env.TOKEN);
+client.on("error", console.error);
+
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
+
+client.login(TOKEN);
