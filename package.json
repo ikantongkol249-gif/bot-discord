@@ -8,15 +8,19 @@ const client = new Client({
 });
 
 client.once("ready", async () => {
-  console.log(client.user.tag);
+  console.log("Login:", client.user.tag);
 
   const guild = client.guilds.cache.get(process.env.GUILD_ID);
   console.log("Guild:", guild?.name);
 
   const channel = await client.channels.fetch(process.env.CHANNEL_ID);
-  console.log(channel);
+  console.log("Channel Name:", channel?.name);
+  console.log("Channel Type:", channel?.type);
 
-  console.log("voiceAdapterCreator:", typeof guild.voiceAdapterCreator);
+  console.log(
+    "voiceAdapterCreator:",
+    typeof guild?.voiceAdapterCreator
+  );
 });
 
 client.login(process.env.TOKEN);
