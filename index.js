@@ -1,29 +1,16 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildVoiceStates,
-  ],
+  intents: [GatewayIntentBits.Guilds],
 });
 
-client.once("clientReady", async () => {
-  console.log(`✅ Login sebagai ${client.user.tag}`);
+client.once("clientReady", () => {
+  console.log("Login:", client.user.tag);
 
-  try {
-    const guild = await client.guilds.fetch(process.env.GUILD_ID);
-
-    console.log("Guild:", guild.name);
-    console.log("ID:", guild.id);
-
-    const channel = await client.channels.fetch(process.env.CHANNEL_ID);
-
-    console.log("Channel:", channel.name);
-    console.log("Type:", channel.type);
-    console.log("voiceAdapterCreator:", typeof guild.voiceAdapterCreator);
-  } catch (err) {
-    console.error(err);
-  }
+  console.log(
+    "Guilds:",
+    client.guilds.cache.map(g => `${g.name} | ${g.id}`)
+  );
 });
 
 client.login(process.env.TOKEN);
