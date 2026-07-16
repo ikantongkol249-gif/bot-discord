@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const {
   joinVoiceChannel,
   VoiceConnectionStatus,
- 	entersState,
+  entersState,
 } = require("@discordjs/voice");
 
 const client = new Client({
@@ -20,19 +20,19 @@ let connection;
 
 async function connectVoice() {
   try {
-    const guild = client.guilds.cache.get(GUILD_ID);
+    const guild = await client.guilds.fetch(GUILD_ID);
 
-    if (!guild) {
-      console.log("Guild tidak ditemukan.");
-      return;
-    }
+    console.log("===== GUILD =====");
+    console.log("Nama:", guild.name);
+    console.log("ID:", guild.id);
+    console.log("Adapter:", typeof guild.voiceAdapterCreator);
 
-    const channel = guild.channels.cache.get(CHANNEL_ID);
+    const channel = await client.channels.fetch(CHANNEL_ID);
 
-    if (!channel) {
-      console.log("Channel tidak ditemukan.");
-      return;
-    }
+    console.log("===== CHANNEL =====");
+    console.log("Nama:", channel.name);
+    console.log("ID:", channel.id);
+    console.log("Type:", channel.type);
 
     connection = joinVoiceChannel({
       channelId: channel.id,
@@ -46,16 +46,18 @@ async function connectVoice() {
 
     console.log("✅ Bot berhasil masuk voice.");
   } catch (err) {
+    console.error("❌ ERROR:");
     console.error(err);
   }
 }
 
 client.once("clientReady", async () => {
-  console.log(`Login: ${client.user.tag}`);
-
-  await client.guilds.fetch();
-
+  console.log(`✅ Login sebagai ${client.user.tag}`);
   connectVoice();
 });
+
+client.on("error", console.error);
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
 
 client.login(TOKEN);
