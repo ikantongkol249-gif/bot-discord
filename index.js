@@ -1,16 +1,19 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, ChannelType } = require("discord.js");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
 });
 
-client.once("clientReady", () => {
-  console.log("Login:", client.user.tag);
+client.once("clientReady", async () => {
+  const channel = await client.channels.fetch(process.env.CHANNEL_ID);
 
-  console.log(
-    "Guilds:",
-    client.guilds.cache.map(g => `${g.name} | ${g.id}`)
-  );
+  console.log("Nama:", channel.name);
+  console.log("ID:", channel.id);
+  console.log("Type:", channel.type);
+  console.log("Guild:", channel.guild?.name);
 });
 
 client.login(process.env.TOKEN);
