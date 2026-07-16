@@ -6,22 +6,30 @@ const {
 } = require("@discordjs/voice");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
 });
 
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
-let connection;
+let connection = null;
 
 async function connectVoice() {
   try {
-    const guild = await client.guilds.fetch(GUILD_ID);
+    const guild = client.guilds.cache.get(GUILD_ID);
+
+    if (!guild) {
+      console.log("❌ Guild tidak ditemukan.");
+      return;
+    }
 
     connection = joinVoiceChannel({
       channelId: CHANNEL_ID,
-      guildId: guild.id,
+      guildId: GUILD_ID,
       adapterCreator: guild.voiceAdapterCreator,
       selfDeaf: false,
       selfMute: false,
@@ -32,14 +40,15 @@ async function connectVoice() {
     console.log("✅ Bot berhasil masuk voice channel.");
 
     connection.on(VoiceConnectionStatus.Disconnected, async () => {
-      console.log("⚠️ Terputus. Mencoba reconnect...");
+      console.log("⚠️ Terputus, mencoba reconnect...");
 
       try {
         await entersState(connection, VoiceConnectionStatus.Connecting, 5000);
-        console.log("✅ Berhasil reconnect.");
+        console.log("✅ Reconnect berhasil.");
       } catch {
-        console.log("🔄 Rejoin voice channel...");
-        connectVoice();
+        console.log("🔄 Rejoin voice...");
+        connection.destroy();
+        setTimeout(connectVoice, 5000);
       }
     });
 
@@ -50,7 +59,9 @@ async function connectVoice() {
 }
 
 client.once("ready", async () => {
-  console.log(`Login sebagai ${client.user.tag}`);
+  console.log(`✅ Login sebagai ${client.user.tag}`);
+
+  await client.guilds.fetch();
   connectVoice();
 });
 
