@@ -2,11 +2,14 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const {
   joinVoiceChannel,
   VoiceConnectionStatus,
-  entersState,
+ 	entersState,
 } = require("@discordjs/voice");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
 });
 
 const TOKEN = process.env.TOKEN;
@@ -17,10 +20,22 @@ let connection;
 
 async function connectVoice() {
   try {
-    const guild = await client.guilds.fetch(GUILD_ID);
+    const guild = client.guilds.cache.get(GUILD_ID);
+
+    if (!guild) {
+      console.log("Guild tidak ditemukan.");
+      return;
+    }
+
+    const channel = guild.channels.cache.get(CHANNEL_ID);
+
+    if (!channel) {
+      console.log("Channel tidak ditemukan.");
+      return;
+    }
 
     connection = joinVoiceChannel({
-      channelId: CHANNEL_ID,
+      channelId: channel.id,
       guildId: guild.id,
       adapterCreator: guild.voiceAdapterCreator,
       selfDeaf: false,
@@ -29,34 +44,18 @@ async function connectVoice() {
 
     await entersState(connection, VoiceConnectionStatus.Ready, 30000);
 
-    console.log("✅ Bot berhasil masuk voice channel.");
-
-    connection.on(VoiceConnectionStatus.Disconnected, async () => {
-      console.log("⚠️ Terputus. Mencoba reconnect...");
-
-      try {
-        await entersState(connection, VoiceConnectionStatus.Connecting, 5000);
-        console.log("✅ Berhasil reconnect.");
-      } catch {
-        console.log("🔄 Rejoin voice channel...");
-        connectVoice();
-      }
-    });
-
+    console.log("✅ Bot berhasil masuk voice.");
   } catch (err) {
-    console.error("❌ Gagal join voice:", err);
-    setTimeout(connectVoice, 10000);
+    console.error(err);
   }
 }
 
-client.once("ready", async () => {
-  console.log(`Login sebagai ${client.user.tag}`);
+client.once("clientReady", async () => {
+  console.log(`Login: ${client.user.tag}`);
+
+  await client.guilds.fetch();
+
   connectVoice();
 });
-
-client.on("error", console.error);
-
-process.on("unhandledRejection", console.error);
-process.on("uncaughtException", console.error);
 
 client.login(TOKEN);
