@@ -1,9 +1,7 @@
 const { Client, GatewayIntentBits } = require("discord.js");
-const {
-  joinVoiceChannel,
-  VoiceConnectionStatus,
-  entersState,
-} = require("@discordjs/voice");
+const voice = require("@discordjs/voice");
+
+console.log("discord.js version:", require("discord.js").version);
 
 const client = new Client({
   intents: [
@@ -12,29 +10,20 @@ const client = new Client({
   ],
 });
 
-const TOKEN = process.env.TOKEN;
-const GUILD_ID = process.env.GUILD_ID;
-const CHANNEL_ID = process.env.CHANNEL_ID;
+client.once("clientReady", async () => {
+  console.log("Login:", client.user.tag);
 
-let connection;
+  const guild = await client.guilds.fetch(process.env.GUILD_ID);
+  console.log("Guild:", guild.name);
+  console.log("Guild ID:", guild.id);
+  console.log("voiceAdapterCreator:", typeof guild.voiceAdapterCreator);
 
-async function connectVoice() {
+  const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+  console.log("Channel:", channel.name);
+  console.log("Channel Type:", channel.type);
+
   try {
-    const guild = await client.guilds.fetch(GUILD_ID);
-
-    console.log("===== GUILD =====");
-    console.log("Nama:", guild.name);
-    console.log("ID:", guild.id);
-    console.log("Adapter:", typeof guild.voiceAdapterCreator);
-
-    const channel = await client.channels.fetch(CHANNEL_ID);
-
-    console.log("===== CHANNEL =====");
-    console.log("Nama:", channel.name);
-    console.log("ID:", channel.id);
-    console.log("Type:", channel.type);
-
-    connection = joinVoiceChannel({
+    const connection = voice.joinVoiceChannel({
       channelId: channel.id,
       guildId: guild.id,
       adapterCreator: guild.voiceAdapterCreator,
@@ -42,22 +31,18 @@ async function connectVoice() {
       selfMute: false,
     });
 
-    await entersState(connection, VoiceConnectionStatus.Ready, 30000);
+    console.log("Join berhasil.");
 
-    console.log("✅ Bot berhasil masuk voice.");
-  } catch (err) {
-    console.error("❌ ERROR:");
-    console.error(err);
+    await voice.entersState(
+      connection,
+      voice.VoiceConnectionStatus.Ready,
+      30000
+    );
+
+    console.log("Voice Ready.");
+  } catch (e) {
+    console.error(e);
   }
-}
-
-client.once("clientReady", async () => {
-  console.log(`✅ Login sebagai ${client.user.tag}`);
-  connectVoice();
 });
 
-client.on("error", console.error);
-process.on("unhandledRejection", console.error);
-process.on("uncaughtException", console.error);
-
-client.login(TOKEN);
+client.login(process.env.TOKEN);
